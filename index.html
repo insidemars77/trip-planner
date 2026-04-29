@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Travel Explorer 🌍</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      display: flex;
+      height: 100vh;
+    }
+
+    #map {
+      width: 50%;
+    }
+
+    #panel {
+      width: 50%;
+      padding: 20px;
+      overflow-y: auto;
+      background: #111;
+      color: white;
+    }
+
+    h2 {
+      margin-top: 0;
+    }
+
+    .video {
+      margin: 10px 0;
+    }
+
+    iframe {
+      width: 100%;
+      height: 200px;
+      border-radius: 10px;
+    }
+
+    .card {
+      background: #222;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 10px;
+    }
+
+    button {
+      padding: 10px;
+      margin-top: 10px;
+      background: orange;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div id="panel">
+  <h2>🌍 Travel Explorer</h2>
+  <p>Click anywhere on map</p>
+
+  <div id="location"></div>
+
+  <div class="card">
+    <h3>🤖 AI Suggestions</h3>
+    <p id="ai"></p>
+  </div>
+
+  <div class="card">
+    <h3>🚗 How to Reach</h3>
+    <p id="route"></p>
+  </div>
+
+  <div class="card">
+    <h3>🎥 Travel Vlogs</h3>
+    <div id="videos"></div>
+  </div>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+  const map = L.map('map').setView([20.5937, 78.9629], 5);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
+
+  let marker;
+
+  map.on('click', async function(e) {
+    const lat = e.latlng.lat.toFixed(3);
+    const lng = e.latlng.lng.toFixed(3);
+
+    if (marker) map.removeLayer(marker);
+    marker = L.marker([lat, lng]).addTo(map);
+
+    document.getElementById("location").innerHTML =
+      `<h3>📍 Location</h3> Lat: ${lat}, Lng: ${lng}`;
+
+    // Mock AI suggestion
+    const aiText = generateAI(lat, lng);
+    document.getElementById("ai").innerText = aiText;
+
+    // Route suggestion
+    document.getElementById("route").innerText =
+      "Best way: 🚆 Train + 🚕 Cab (Fastest & cheapest for most places)";
+
+    // Fake vlog search (keyword based)
+    loadVideos(lat, lng);
+  });
+
+  function generateAI(lat, lng) {
+    const suggestions = [
+      "Perfect for a weekend getaway. Best time: Early morning 🌄",
+      "Crowded tourist spot. Visit during weekdays.",
+      "Hidden gem! Try local food nearby 🍜",
+      "Great for photography and sunset views 📸",
+      "Adventure spot. Carry essentials!"
+    ];
+
+    return suggestions[Math.floor(Math.random() * suggestions.length)];
+  }
+
+  function loadVideos(lat, lng) {
+    const container = document.getElementById("videos");
+    container.innerHTML = "";
+
+    const keywords = ["travel vlog", "tour", "explore"];
+
+    keywords.forEach(word => {
+      const iframe = document.createElement("iframe");
+
+      iframe.src =
+        `https://www.youtube.com/embed?listType=search&list=${lat},${lng}+${word}`;
+
+      container.appendChild(iframe);
+    });
+  }
+</script>
+
+</body>
+</html>
