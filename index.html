@@ -14,20 +14,22 @@
     #map {
       height: 100vh;
       width: 100%;
+      z-index: 1;
     }
 
     #panel {
       position: fixed;
       top: 0;
-      right: -350px;
-      width: 350px;
+      right: -360px;
+      width: 360px;
       height: 100%;
       background: #121212;
       color: white;
       padding: 20px;
-      transition: 0.3s;
+      transition: 0.3s ease;
       overflow-y: auto;
-      box-shadow: -5px 0 15px rgba(0,0,0,0.5);
+      box-shadow: -5px 0 20px rgba(0,0,0,0.6);
+      z-index: 1000; /* 🔥 fixes your issue */
     }
 
     #panel.active {
@@ -38,6 +40,10 @@
       cursor: pointer;
       float: right;
       font-size: 18px;
+    }
+
+    h2 {
+      margin-top: 0;
     }
 
     .card {
@@ -51,7 +57,11 @@
       color: orange;
       text-decoration: none;
       display: block;
-      margin: 5px 0;
+      margin: 6px 0;
+    }
+
+    a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
@@ -133,19 +143,19 @@
   }
 
   function getAI(place) {
-    place = place.toLowerCase();
+    const p = place.toLowerCase();
 
-    if (place.includes("goa"))
-      return "Beach destination 🏖️. Best in winter. Try renting a bike.";
+    if (p.includes("goa"))
+      return "🏖️ Beach destination. Best in winter. Rent a bike and explore.";
 
-    if (place.includes("mumbai"))
-      return "Urban city 🌆. Visit Marine Drive at night and try street food.";
+    if (p.includes("mumbai"))
+      return "🌆 Busy city. Visit Marine Drive at night & try street food.";
 
-    return "Explore local culture, check food spots, and visit during sunrise/sunset.";
+    return "🌍 Explore local culture, try nearby food, and visit at sunrise/sunset.";
   }
 
   function getRoute(lat, lng) {
-    return `Use Google Maps for best route:
+    return `Open route in Google Maps:
 https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
   }
 
