@@ -17,6 +17,30 @@
       z-index: 1;
     }
 
+    #searchBox {
+      position: fixed;
+      top: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1001;
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+
+    #searchBox input {
+      padding: 8px;
+      width: 200px;
+    }
+
+    #searchBox button {
+      padding: 8px;
+      background: orange;
+      border: none;
+      cursor: pointer;
+    }
+
     #panel {
       position: fixed;
       top: 0;
@@ -28,7 +52,6 @@
       padding: 20px;
       transition: 0.3s ease;
       overflow-y: auto;
-      box-shadow: -5px 0 20px rgba(0,0,0,0.6);
       z-index: 1000;
     }
 
@@ -39,11 +62,6 @@
     .close {
       cursor: pointer;
       float: right;
-      font-size: 18px;
-    }
-
-    h2 {
-      margin-top: 0;
     }
 
     .card {
@@ -55,19 +73,18 @@
 
     a {
       color: orange;
-      text-decoration: none;
       display: block;
-      margin: 8px 0;
-      font-weight: bold;
-    }
-
-    a:hover {
-      text-decoration: underline;
+      margin: 6px 0;
     }
   </style>
 </head>
 
 <body>
+
+<div id="searchBox">
+  <input type="text" id="searchInput" placeholder="Search city...">
+  <button onclick="searchPlace()">Search</button>
+</div>
 
 <div id="map"></div>
 
@@ -76,12 +93,12 @@
   <h2 id="place">📍 Location</h2>
 
   <div class="card">
-    <h3>🤖 Smart Suggestions</h3>
-    <p id="ai"></p>
+    <h3>📌 Nearest Major Location</h3>
+    <p id="nearest"></p>
   </div>
 
   <div class="card">
-    <h3>🚗 Travel Advice</h3>
+    <h3>🚗 Travel Route</h3>
     <div id="route"></div>
   </div>
 
@@ -101,24 +118,78 @@
   let marker;
 
   map.on('click', async (e) => {
-    const { lat, lng } = e.latlng;
+    handleLocation(e.latlng.lat, e.latlng.lng);
+  });
 
+  async function handleLocation(lat, lng) {
     if (marker) map.removeLayer(marker);
     marker = L.marker([lat, lng]).addTo(map);
 
-    const place = await getPlace(lat, lng);
+    const data = await reverseGeo(lat, lng);
+
+    const place =
+      data.address.city ||
+      data.address.town ||
+      data.address.village ||
+      data.address.state ||
+      "Unknown";
+
+    const nearest =
+      data.address.state ||
+      data.address.country ||
+      "Unknown";
 
     document.getElementById("place").innerText = "📍 " + place;
+    document.getElementById("nearest").innerText = nearest;
 
-    document.getElementById("ai").innerText = getAI(place);
-
-    // 🔥 FIXED: use innerHTML for clickable link
-    document.getElementById("route").innerHTML = getRoute(lat, lng);
+    document.getElementById("route").innerHTML =
+      `<a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank">
+        🚗 Open in Google Maps
+      </a>`;
 
     loadVideos(place);
 
     openPanel();
-  });
+  }
+
+  async function reverseGeo(lat, lng) {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+    );
+    return res.json();
+  }
+
+  function loadVideos(place) {
+    const container = document.getElementById("videos");
+    container.innerHTML = "";
+
+    ["travel vlog", "tourism", "places to visit"].forEach(q => {
+      const link = document.createElement("a");
+      link.href = `https://www.youtube.com/results?search_query=${encodeURIComponent(place + " " + q)}`;
+      link.target = "_blank";
+      link.innerText = `▶ ${place} ${q}`;
+      container.appendChild(link);
+    });
+  }
+
+  async function searchPlace() {
+    const query = document.getElementById("searchInput").value;
+
+    if (!query) return;
+
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${query}`
+    );
+    const data = await res.json();
+
+    if (data.length > 0) {
+      const lat = data[0].lat;
+      const lon = data[0].lon;
+
+      map.setView([lat, lon], 10);
+      handleLocation(lat, lon);
+    }
+  }
 
   function openPanel() {
     document.getElementById("panel").classList.add("active");
@@ -126,63 +197,6 @@
 
   function closePanel() {
     document.getElementById("panel").classList.remove("active");
-  }
-
-  async function getPlace(lat, lng) {
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
-      );
-      const data = await res.json();
-
-      return data.address.city ||
-             data.address.town ||
-             data.address.village ||
-             data.address.state ||
-             "Unknown place";
-    } catch {
-      return "Unknown place";
-    }
-  }
-
-  function getAI(place) {
-    const p = place.toLowerCase();
-
-    if (p.includes("goa"))
-      return "🏖️ Beach destination. Best in winter. Rent a bike and explore.";
-
-    if (p.includes("mumbai"))
-      return "🌆 Busy city. Visit Marine Drive at night & try street food.";
-
-    return "🌍 Explore local culture, try nearby food, and visit at sunrise/sunset.";
-  }
-
-  function getRoute(lat, lng) {
-    return `
-      <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank">
-        🚗 Open route in Google Maps
-      </a>
-    `;
-  }
-
-  function loadVideos(place) {
-    const container = document.getElementById("videos");
-    container.innerHTML = "";
-
-    const queries = [
-      "travel vlog",
-      "tourism",
-      "places to visit"
-    ];
-
-    queries.forEach(q => {
-      const link = document.createElement("a");
-      link.href = `https://www.youtube.com/results?search_query=${encodeURIComponent(place + " " + q)}`;
-      link.target = "_blank";
-      link.innerText = `▶ ${place} ${q}`;
-
-      container.appendChild(link);
-    });
   }
 </script>
 
