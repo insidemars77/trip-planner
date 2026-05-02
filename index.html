@@ -29,7 +29,7 @@
       transition: 0.3s ease;
       overflow-y: auto;
       box-shadow: -5px 0 20px rgba(0,0,0,0.6);
-      z-index: 1000; /* 🔥 fixes your issue */
+      z-index: 1000;
     }
 
     #panel.active {
@@ -57,7 +57,8 @@
       color: orange;
       text-decoration: none;
       display: block;
-      margin: 6px 0;
+      margin: 8px 0;
+      font-weight: bold;
     }
 
     a:hover {
@@ -81,7 +82,7 @@
 
   <div class="card">
     <h3>🚗 Travel Advice</h3>
-    <p id="route"></p>
+    <div id="route"></div>
   </div>
 
   <div class="card">
@@ -110,7 +111,9 @@
     document.getElementById("place").innerText = "📍 " + place;
 
     document.getElementById("ai").innerText = getAI(place);
-    document.getElementById("route").innerText = getRoute(lat, lng);
+
+    // 🔥 FIXED: use innerHTML for clickable link
+    document.getElementById("route").innerHTML = getRoute(lat, lng);
 
     loadVideos(place);
 
@@ -155,8 +158,11 @@
   }
 
   function getRoute(lat, lng) {
-    return `Open route in Google Maps:
-https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+    return `
+      <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank">
+        🚗 Open route in Google Maps
+      </a>
+    `;
   }
 
   function loadVideos(place) {
