@@ -8,54 +8,50 @@
   <style>
     body {
       margin: 0;
-      font-family: Arial;
-      display: flex;
-      height: 100vh;
+      font-family: Arial, sans-serif;
     }
 
     #map {
+      height: 100vh;
       width: 100%;
     }
 
     #panel {
       position: fixed;
-      right: -400px;
       top: 0;
-      width: 400px;
+      right: -350px;
+      width: 350px;
       height: 100%;
-      background: #111;
+      background: #121212;
       color: white;
       padding: 20px;
       transition: 0.3s;
       overflow-y: auto;
+      box-shadow: -5px 0 15px rgba(0,0,0,0.5);
     }
 
     #panel.active {
       right: 0;
     }
 
-    h2 {
-      margin-top: 0;
-    }
-
-    iframe {
-      width: 100%;
-      height: 200px;
-      border-radius: 10px;
-      margin: 10px 0;
-    }
-
-    .card {
-      background: #222;
-      padding: 15px;
-      margin: 10px 0;
-      border-radius: 10px;
-    }
-
     .close {
       cursor: pointer;
       float: right;
-      font-size: 20px;
+      font-size: 18px;
+    }
+
+    .card {
+      background: #1e1e1e;
+      padding: 15px;
+      margin-top: 15px;
+      border-radius: 10px;
+    }
+
+    a {
+      color: orange;
+      text-decoration: none;
+      display: block;
+      margin: 5px 0;
     }
   </style>
 </head>
@@ -66,15 +62,15 @@
 
 <div id="panel">
   <span class="close" onclick="closePanel()">❌</span>
-  <h2 id="placeName">📍 Location</h2>
+  <h2 id="place">📍 Location</h2>
 
   <div class="card">
-    <h3>🤖 AI Suggestions</h3>
+    <h3>🤖 Smart Suggestions</h3>
     <p id="ai"></p>
   </div>
 
   <div class="card">
-    <h3>🚗 How to Reach</h3>
+    <h3>🚗 Travel Advice</h3>
     <p id="route"></p>
   </div>
 
@@ -89,25 +85,22 @@
 <script>
   const map = L.map('map').setView([20.5937, 78.9629], 5);
 
-  L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap'
-  }).addTo(map);
+  L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png').addTo(map);
 
   let marker;
 
-  map.on('click', async function(e) {
-    const lat = e.latlng.lat;
-    const lng = e.latlng.lng;
+  map.on('click', async (e) => {
+    const { lat, lng } = e.latlng;
 
     if (marker) map.removeLayer(marker);
     marker = L.marker([lat, lng]).addTo(map);
 
-    const place = await getPlaceName(lat, lng);
+    const place = await getPlace(lat, lng);
 
-    document.getElementById("placeName").innerText = "📍 " + place;
+    document.getElementById("place").innerText = "📍 " + place;
 
-    document.getElementById("ai").innerText = generateAI(place);
-    document.getElementById("route").innerText = getRoute(place);
+    document.getElementById("ai").innerText = getAI(place);
+    document.getElementById("route").innerText = getRoute(lat, lng);
 
     loadVideos(place);
 
@@ -122,7 +115,7 @@
     document.getElementById("panel").classList.remove("active");
   }
 
-  async function getPlaceName(lat, lng) {
+  async function getPlace(lat, lng) {
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
@@ -133,27 +126,27 @@
              data.address.town ||
              data.address.village ||
              data.address.state ||
-             "Unknown Place";
-
+             "Unknown place";
     } catch {
-      return "Unknown Place";
+      return "Unknown place";
     }
   }
 
-  function generateAI(place) {
-    if (place.toLowerCase().includes("mumbai")) {
-      return "Best time: evening 🌇. Try street food and Marine Drive.";
-    }
+  function getAI(place) {
+    place = place.toLowerCase();
 
-    if (place.toLowerCase().includes("goa")) {
-      return "Perfect for beaches 🏖️ and nightlife. Rent a bike!";
-    }
+    if (place.includes("goa"))
+      return "Beach destination 🏖️. Best in winter. Try renting a bike.";
 
-    return "Explore local culture, try nearby food spots 🍜, and visit during sunrise or sunset.";
+    if (place.includes("mumbai"))
+      return "Urban city 🌆. Visit Marine Drive at night and try street food.";
+
+    return "Explore local culture, check food spots, and visit during sunrise/sunset.";
   }
 
-  function getRoute(place) {
-    return "🚆 Train + 🚕 Cab recommended for " + place + ". Cheapest & reliable.";
+  function getRoute(lat, lng) {
+    return `Use Google Maps for best route:
+https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
   }
 
   function loadVideos(place) {
@@ -161,17 +154,18 @@
     container.innerHTML = "";
 
     const queries = [
-      place + " travel vlog",
-      place + " tourism",
-      place + " places to visit"
+      "travel vlog",
+      "tourism",
+      "places to visit"
     ];
 
     queries.forEach(q => {
-      const iframe = document.createElement("iframe");
-      iframe.src =
-        "https://www.youtube.com/embed?listType=search&list=" + encodeURIComponent(q);
-      iframe.allowFullscreen = true;
-      container.appendChild(iframe);
+      const link = document.createElement("a");
+      link.href = `https://www.youtube.com/results?search_query=${encodeURIComponent(place + " " + q)}`;
+      link.target = "_blank";
+      link.innerText = `▶ ${place} ${q}`;
+
+      container.appendChild(link);
     });
   }
 </script>
