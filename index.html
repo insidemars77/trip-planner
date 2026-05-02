@@ -3,7 +3,6 @@
 <head>
   <title>Travel Explorer 🌍</title>
 
-  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
   <style>
@@ -15,29 +14,35 @@
     }
 
     #map {
-      width: 50%;
+      width: 100%;
     }
 
     #panel {
-      width: 50%;
-      padding: 20px;
-      overflow-y: auto;
+      position: fixed;
+      right: -400px;
+      top: 0;
+      width: 400px;
+      height: 100%;
       background: #111;
       color: white;
+      padding: 20px;
+      transition: 0.3s;
+      overflow-y: auto;
+    }
+
+    #panel.active {
+      right: 0;
     }
 
     h2 {
       margin-top: 0;
     }
 
-    .video {
-      margin: 10px 0;
-    }
-
     iframe {
       width: 100%;
       height: 200px;
       border-radius: 10px;
+      margin: 10px 0;
     }
 
     .card {
@@ -47,25 +52,21 @@
       border-radius: 10px;
     }
 
-    button {
-      padding: 10px;
-      margin-top: 10px;
-      background: orange;
-      border: none;
-      border-radius: 5px;
+    .close {
       cursor: pointer;
+      float: right;
+      font-size: 20px;
     }
   </style>
 </head>
+
 <body>
 
 <div id="map"></div>
 
 <div id="panel">
-  <h2>🌍 Travel Explorer</h2>
-  <p>Click anywhere on map</p>
-
-  <div id="location"></div>
+  <span class="close" onclick="closePanel()">❌</span>
+  <h2 id="placeName">📍 Location</h2>
 
   <div class="card">
     <h3>🤖 AI Suggestions</h3>
@@ -83,64 +84,93 @@
   </div>
 </div>
 
-<!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
   const map = L.map('map').setView([20.5937, 78.9629], 5);
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
   }).addTo(map);
 
   let marker;
 
   map.on('click', async function(e) {
-    const lat = e.latlng.lat.toFixed(3);
-    const lng = e.latlng.lng.toFixed(3);
+    const lat = e.latlng.lat;
+    const lng = e.latlng.lng;
 
     if (marker) map.removeLayer(marker);
     marker = L.marker([lat, lng]).addTo(map);
 
-    document.getElementById("location").innerHTML =
-      `<h3>📍 Location</h3> Lat: ${lat}, Lng: ${lng}`;
+    const place = await getPlaceName(lat, lng);
 
-    // Mock AI suggestion
-    const aiText = generateAI(lat, lng);
-    document.getElementById("ai").innerText = aiText;
+    document.getElementById("placeName").innerText = "📍 " + place;
 
-    // Route suggestion
-    document.getElementById("route").innerText =
-      "Best way: 🚆 Train + 🚕 Cab (Fastest & cheapest for most places)";
+    document.getElementById("ai").innerText = generateAI(place);
+    document.getElementById("route").innerText = getRoute(place);
 
-    // Fake vlog search (keyword based)
-    loadVideos(lat, lng);
+    loadVideos(place);
+
+    openPanel();
   });
 
-  function generateAI(lat, lng) {
-    const suggestions = [
-      "Perfect for a weekend getaway. Best time: Early morning 🌄",
-      "Crowded tourist spot. Visit during weekdays.",
-      "Hidden gem! Try local food nearby 🍜",
-      "Great for photography and sunset views 📸",
-      "Adventure spot. Carry essentials!"
-    ];
-
-    return suggestions[Math.floor(Math.random() * suggestions.length)];
+  function openPanel() {
+    document.getElementById("panel").classList.add("active");
   }
 
-  function loadVideos(lat, lng) {
+  function closePanel() {
+    document.getElementById("panel").classList.remove("active");
+  }
+
+  async function getPlaceName(lat, lng) {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+      );
+      const data = await res.json();
+
+      return data.address.city ||
+             data.address.town ||
+             data.address.village ||
+             data.address.state ||
+             "Unknown Place";
+
+    } catch {
+      return "Unknown Place";
+    }
+  }
+
+  function generateAI(place) {
+    if (place.toLowerCase().includes("mumbai")) {
+      return "Best time: evening 🌇. Try street food and Marine Drive.";
+    }
+
+    if (place.toLowerCase().includes("goa")) {
+      return "Perfect for beaches 🏖️ and nightlife. Rent a bike!";
+    }
+
+    return "Explore local culture, try nearby food spots 🍜, and visit during sunrise or sunset.";
+  }
+
+  function getRoute(place) {
+    return "🚆 Train + 🚕 Cab recommended for " + place + ". Cheapest & reliable.";
+  }
+
+  function loadVideos(place) {
     const container = document.getElementById("videos");
     container.innerHTML = "";
 
-    const keywords = ["travel vlog", "tour", "explore"];
+    const queries = [
+      place + " travel vlog",
+      place + " tourism",
+      place + " places to visit"
+    ];
 
-    keywords.forEach(word => {
+    queries.forEach(q => {
       const iframe = document.createElement("iframe");
-
       iframe.src =
-        `https://www.youtube.com/embed?listType=search&list=${lat},${lng}+${word}`;
-
+        "https://www.youtube.com/embed?listType=search&list=" + encodeURIComponent(q);
+      iframe.allowFullscreen = true;
       container.appendChild(iframe);
     });
   }
